@@ -9,27 +9,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* High-Contrast, Balanced Light Palette */
-            --bg-canvas: #f1f5f9;            /* Cool Slate Canvas */
-            --bg-surface: #ffffff;           /* Pure White Cards */
-            --bg-subtle: #f8fafc;            /* Subtle Inner Container */
+            --bg-canvas: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f8fafc;
             
-            --border-card: #e2e8f0;          /* Crisp Structural Border */
+            --border-card: #e2e8f0;
             --border-subtle: #edf2f7;
             
-            --primary: #1d4ed8;              /* Royal Cobalt */
+            --primary: #1d4ed8;
             --primary-hover: #1e40af;
             --primary-light: #eff6ff;
             --primary-border: #bfdbfe;
             
-            --ai-indigo: #4338ca;            /* Deep Indigo */
+            --ai-indigo: #4338ca;
             --ai-indigo-light: #eef2ff;
             --ai-indigo-border: #c7d2fe;
             
-            --text-title: #0f172a;           /* Obsidian Slate */
-            --text-body: #475569;            /* Steel Gray */
-            --text-muted: #64748b;           /* Muted Slate */
-            --text-faint: #94a3b8;           /* Faint Labels */
+            --text-title: #0f172a;
+            --text-body: #475569;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
             
             --success: #059669;
             --success-bg: #ecfdf5;
@@ -279,7 +278,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Clean White Cards with High Contrast on Canvas */
+        /* Clean White Cards */
         .card {
             background: var(--bg-surface);
             border: 1px solid var(--border-card);
@@ -729,9 +728,9 @@
         <div class="sidebar-footer">
             <div class="footer-status">
                 <div class="status-dot"></div>
-                <span>Engine Active</span>
+                <span id="backend-status-text">Engine Active</span>
             </div>
-            <div class="footer-desc">
+            <div class="footer-desc" id="backend-status-desc">
                 Java OOP Architecture<br>
                 Offline Priority Engine
             </div>
@@ -759,7 +758,7 @@
         <!-- 1. DASHBOARD PANEL -->
         <section id="dashboard" class="panel active">
             
-            <!-- AI Recommendation Highlight (Deep Indigo Accent) -->
+            <!-- AI Recommendation Highlight -->
             <div class="ai-banner" id="hero-banner">
                 <span class="ai-badge">⚡ Top Recommended Target</span>
                 <h2 class="ai-title" id="hero-topic-name">Analyzing priority...</h2>
@@ -1034,7 +1033,287 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script>
-        const API_BASE = 'http://localhost:8080/api';
+        // ==========================================================
+        // DUAL-MODE CLIENT ENGINE (Java Backend + In-Browser Fallback)
+        // Works seamlessly locally with Java & SQLite, AND works 100%
+        // when hosted on GitHub Pages, Vercel, Netlify, etc.!
+        // ==========================================================
+
+        let isLiveBackend = false;
+        const API_URL = (window.location.protocol === 'http:' && window.location.port === '8080')
+            ? '/api' 
+            : 'http://localhost:8080/api';
+
+        // Local Storage Client Engine (used when hosted statically on GitHub Pages / Vercel)
+        const LocalEngine = {
+            init() {
+                if (!localStorage.getItem('study_planner_student')) {
+                    localStorage.setItem('study_planner_student', JSON.stringify({
+                        registered: true,
+                        id: 1,
+                        name: 'Student Demo',
+                        semester: 3,
+                        dailyStudyHours: 4.0
+                    }));
+                }
+                if (!localStorage.getItem('study_planner_subjects')) {
+                    const nextWeek = new Date();
+                    nextWeek.setDate(nextWeek.getDate() + 10);
+                    const examStr = nextWeek.toISOString().split('T')[0];
+                    localStorage.setItem('study_planner_subjects', JSON.stringify([
+                        { id: 1, name: 'Data Structures & OOP', examDate: examStr }
+                    ]));
+                }
+                if (!localStorage.getItem('study_planner_topics')) {
+                    localStorage.setItem('study_planner_topics', JSON.stringify([
+                        { id: 1, subjectId: 1, name: 'Polymorphism & Abstraction', difficulty: 4, hours: 3.0, isCompleted: false },
+                        { id: 2, subjectId: 1, name: 'Binary Search Trees', difficulty: 3, hours: 2.0, isCompleted: false },
+                        { id: 3, subjectId: 1, name: 'Encapsulation & Classes', difficulty: 1, hours: 1.0, isCompleted: true }
+                    ]));
+                }
+            },
+            getDaysUntil(dateStr) {
+                if (!dateStr) return 30;
+                try {
+                    const exam = new Date(dateStr);
+                    const today = new Date();
+                    const diffTime = exam - today;
+                    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                } catch(e) { return 30; }
+            },
+            getDifficultyText(d) {
+                switch(Number(d)) {
+                    case 1: return "Very Easy";
+                    case 2: return "Easy";
+                    case 3: return "Medium";
+                    case 4: return "Hard";
+                    case 5: return "Very Hard";
+                    default: return "Medium";
+                }
+            },
+            getStudent() {
+                return JSON.parse(localStorage.getItem('study_planner_student')) || { registered: false };
+            },
+            saveStudent(data) {
+                const s = { registered: true, id: 1, name: data.name, semester: Number(data.semester), dailyStudyHours: Number(data.dailyStudyHours) };
+                localStorage.setItem('study_planner_student', JSON.stringify(s));
+                return { success: true };
+            },
+            getSubjects() {
+                const subs = JSON.parse(localStorage.getItem('study_planner_subjects')) || [];
+                return subs.map(s => ({
+                    ...s,
+                    daysUntil: LocalEngine.getDaysUntil(s.examDate)
+                }));
+            },
+            addSubject(data) {
+                const subs = JSON.parse(localStorage.getItem('study_planner_subjects')) || [];
+                const id = subs.length > 0 ? Math.max(...subs.map(s => s.id)) + 1 : 1;
+                subs.push({ id, name: data.name, examDate: data.examDate });
+                localStorage.setItem('study_planner_subjects', JSON.stringify(subs));
+                return { success: true, id };
+            },
+            deleteSubject(id) {
+                let subs = JSON.parse(localStorage.getItem('study_planner_subjects')) || [];
+                subs = subs.filter(s => s.id !== Number(id));
+                localStorage.setItem('study_planner_subjects', JSON.stringify(subs));
+
+                let topics = JSON.parse(localStorage.getItem('study_planner_topics')) || [];
+                topics = topics.filter(t => t.subjectId !== Number(id));
+                localStorage.setItem('study_planner_topics', JSON.stringify(topics));
+                return { success: true };
+            },
+            getTopics() {
+                const topics = JSON.parse(localStorage.getItem('study_planner_topics')) || [];
+                const subs = this.getSubjects();
+                const subMap = {};
+                subs.forEach(s => subMap[s.id] = s.name);
+                return topics.map(t => ({
+                    ...t,
+                    subjectName: subMap[t.subjectId] || 'Unknown',
+                    difficultyText: LocalEngine.getDifficultyText(t.difficulty)
+                }));
+            },
+            addTopic(data) {
+                const topics = JSON.parse(localStorage.getItem('study_planner_topics')) || [];
+                const id = topics.length > 0 ? Math.max(...topics.map(t => t.id)) + 1 : 1;
+                topics.push({
+                    id,
+                    subjectId: Number(data.subjectId),
+                    name: data.name,
+                    difficulty: Number(data.difficulty),
+                    hours: Number(data.hours),
+                    isCompleted: false
+                });
+                localStorage.setItem('study_planner_topics', JSON.stringify(topics));
+                return { success: true, id };
+            },
+            completeTopic(id) {
+                const topics = JSON.parse(localStorage.getItem('study_planner_topics')) || [];
+                const t = topics.find(item => item.id === Number(id));
+                if (t) t.isCompleted = true;
+                localStorage.setItem('study_planner_topics', JSON.stringify(topics));
+                return { success: true };
+            },
+            deleteTopic(id) {
+                let topics = JSON.parse(localStorage.getItem('study_planner_topics')) || [];
+                topics = topics.filter(t => t.id !== Number(id));
+                localStorage.setItem('study_planner_topics', JSON.stringify(topics));
+                return { success: true };
+            },
+            getPlan(hours) {
+                const topics = this.getTopics().filter(t => !t.isCompleted);
+                const subs = this.getSubjects();
+                const subMap = {};
+                subs.forEach(s => subMap[s.id] = s);
+
+                // Priority Formula
+                topics.forEach(t => {
+                    const sub = subMap[t.subjectId];
+                    const days = sub ? sub.daysUntil : 30;
+                    const diffScore = (t.difficulty / 5.0) * 35.0;
+                    const urgScore = (1.0 / Math.max(days, 1)) * 40.0;
+                    const effScore = (Math.min(t.hours, 10.0) / 10.0) * 25.0;
+                    t.priority = diffScore + urgScore + effScore;
+                });
+
+                // Sort descending
+                topics.sort((a, b) => b.priority - a.priority);
+
+                let rem = Number(hours) || 4.0;
+                const sessions = [];
+                for (const t of topics) {
+                    if (rem <= 0) break;
+                    const alloc = Math.min(t.hours, rem);
+                    sessions.push({
+                        topicId: t.id,
+                        topicName: t.name,
+                        subjectName: t.subjectName,
+                        allocatedHours: alloc,
+                        difficulty: t.difficulty,
+                        difficultyText: t.difficultyText
+                    });
+                    rem -= alloc;
+                }
+                return sessions;
+            },
+            getProgress() {
+                const topics = this.getTopics();
+                const total = topics.length;
+                const completed = topics.filter(t => t.isCompleted).length;
+                const pending = total - completed;
+                const percentage = total === 0 ? 0 : (completed * 100.0) / total;
+
+                const subs = this.getSubjects();
+                const subjects = subs.map(s => {
+                    const sTopics = topics.filter(t => t.subjectId === s.id);
+                    const sTot = sTopics.length;
+                    const sComp = sTopics.filter(t => t.isCompleted).length;
+                    return {
+                        subjectId: s.id,
+                        name: s.name,
+                        total: sTot,
+                        completed: sComp,
+                        percentage: sTot === 0 ? 0 : (sComp * 100.0) / sTot
+                    };
+                });
+
+                return { total, completed, pending, percentage, subjects };
+            },
+            getRecommendations() {
+                const pending = this.getTopics().filter(t => !t.isCompleted);
+                const subs = this.getSubjects();
+                const subMap = {};
+                subs.forEach(s => subMap[s.id] = s);
+
+                let topRec = null;
+                let highestP = -1;
+
+                pending.forEach(t => {
+                    const sub = subMap[t.subjectId];
+                    const days = sub ? sub.daysUntil : 30;
+                    const p = (t.difficulty / 5.0) * 35 + (1.0 / Math.max(days, 1)) * 40 + (Math.min(t.hours, 10) / 10) * 25;
+                    if (p > highestP) {
+                        highestP = p;
+                        topRec = {
+                            topicName: t.name,
+                            subjectName: t.subjectName,
+                            difficultyText: t.difficultyText,
+                            estimatedHours: t.hours,
+                            daysUntilExam: days
+                        };
+                    }
+                });
+
+                const allTopics = this.getTopics();
+                const revisionTopics = allTopics.filter(t => t.isCompleted && t.difficulty >= 4).map(t => ({
+                    topicName: t.name,
+                    subjectName: t.subjectName,
+                    difficultyText: t.difficultyText
+                }));
+
+                const progress = this.getProgress();
+                const lowCompletion = progress.subjects.filter(s => s.percentage < 50 && s.total > 0).map(s => ({
+                    subjectName: s.name,
+                    percentage: s.percentage
+                }));
+
+                return {
+                    topRecommendation: topRec,
+                    revisionTopics,
+                    lowCompletion
+                };
+            }
+        };
+
+        // Unified Network Dispatcher
+        async function apiFetch(endpoint, options = {}) {
+            if (isLiveBackend) {
+                try {
+                    const res = await fetch(`${API_URL}${endpoint}`, options);
+                    if (res.ok) return await res.json();
+                } catch(e) {
+                    console.warn("Backend call failed, using client storage fallback");
+                }
+            }
+
+            // Client Storage Fallback
+            if (endpoint.startsWith('/student')) {
+                if (options.method === 'POST') return LocalEngine.saveStudent(JSON.parse(options.body));
+                return LocalEngine.getStudent();
+            }
+            if (endpoint.startsWith('/subjects')) {
+                if (options.method === 'POST') return LocalEngine.addSubject(JSON.parse(options.body));
+                if (options.method === 'DELETE') {
+                    const id = new URLSearchParams(endpoint.split('?')[1]).get('id');
+                    return LocalEngine.deleteSubject(id);
+                }
+                return LocalEngine.getSubjects();
+            }
+            if (endpoint.startsWith('/topics/complete')) {
+                const id = new URLSearchParams(endpoint.split('?')[1]).get('id');
+                return LocalEngine.completeTopic(id);
+            }
+            if (endpoint.startsWith('/topics')) {
+                if (options.method === 'POST') return LocalEngine.addTopic(JSON.parse(options.body));
+                if (options.method === 'DELETE') {
+                    const id = new URLSearchParams(endpoint.split('?')[1]).get('id');
+                    return LocalEngine.deleteTopic(id);
+                }
+                return LocalEngine.getTopics();
+            }
+            if (endpoint.startsWith('/plan')) {
+                const hours = new URLSearchParams(endpoint.split('?')[1]).get('hours');
+                return LocalEngine.getPlan(hours);
+            }
+            if (endpoint.startsWith('/progress')) {
+                return LocalEngine.getProgress();
+            }
+            if (endpoint.startsWith('/recommendations')) {
+                return LocalEngine.getRecommendations();
+            }
+            return {};
+        }
 
         function showToast(message) {
             const container = document.getElementById('toast-container');
@@ -1079,14 +1358,29 @@
         }
 
         async function init() {
+            LocalEngine.init();
+
+            // Check if Java backend is live
+            try {
+                const check = await fetch(`${API_URL}/student`, { method: 'GET' });
+                if (check.ok) {
+                    isLiveBackend = true;
+                    document.getElementById('backend-status-text').innerText = "Engine Active (SQLite)";
+                    document.getElementById('backend-status-desc').innerHTML = "Java Server Connected<br>SQLite Persistence";
+                }
+            } catch(e) {
+                isLiveBackend = false;
+                document.getElementById('backend-status-text').innerText = "Engine Active (Hosted)";
+                document.getElementById('backend-status-desc').innerHTML = "Offline Client Engine<br>LocalStorage Persistence";
+            }
+
             await loadProfile();
             await loadDashboard();
         }
 
         async function loadProfile() {
             try {
-                const res = await fetch(`${API_BASE}/student`);
-                const data = await res.json();
+                const data = await apiFetch('/student');
                 if (data.registered) {
                     document.getElementById('student-name-text').innerText = data.name;
                     document.getElementById('student-meta-text').innerText = `Semester ${data.semester} • ${data.dailyStudyHours}h/day`;
@@ -1113,7 +1407,7 @@
                 dailyStudyHours: document.getElementById('prof-hours').value
             };
 
-            await fetch(`${API_BASE}/student`, {
+            await apiFetch('/student', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -1126,8 +1420,7 @@
 
         async function loadDashboard() {
             try {
-                const pRes = await fetch(`${API_BASE}/progress`);
-                const pData = await pRes.json();
+                const pData = await apiFetch('/progress');
 
                 document.getElementById('stat-total').innerText = pData.total;
                 document.getElementById('stat-completed').innerText = pData.completed;
@@ -1137,7 +1430,7 @@
                 document.getElementById('overall-percent').innerText = `${pct}%`;
                 document.getElementById('dashboard-progress-bar').style.width = `${pct}%`;
 
-                // Render Graphs (Canvas 1: Gauge Donut, Canvas 2: Subject Bar Graph)
+                // Render Graphs
                 renderGaugeChart(pData.completed, pData.pending, pData.percentage);
                 renderBarChart(pData.subjects || []);
 
@@ -1160,8 +1453,7 @@
                 }
 
                 // AI Recommendations Banner
-                const rRes = await fetch(`${API_BASE}/recommendations`);
-                const rData = await rRes.json();
+                const rData = await apiFetch('/recommendations');
                 const hero = document.getElementById('hero-banner');
                 if (rData.topRecommendation) {
                     hero.style.display = 'block';
@@ -1177,10 +1469,6 @@
                 console.error(err);
             }
         }
-
-        // ==========================================
-        // Visual Graphs Rendering (Offline HTML5 Canvas)
-        // ==========================================
 
         function renderGaugeChart(completed, pending, percentage) {
             const canvas = document.getElementById('gaugeCanvas');
@@ -1215,7 +1503,7 @@
                 ctx.stroke();
             }
 
-            // Center Percentage Text
+            // Center Text
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#0f172a';
@@ -1251,15 +1539,14 @@
             const chartW = w - paddingLeft - paddingRight;
             const chartH = h - paddingTop - paddingBottom;
 
-            // Find maximum count for scale
             let maxCount = 1;
             subjects.forEach(s => { if (s.total > maxCount) maxCount = s.total; });
-            maxCount = Math.max(maxCount, 5); // Minimum grid ceiling
+            maxCount = Math.max(maxCount, 5);
 
             const barGroupWidth = chartW / subjects.length;
             const barW = Math.min(barGroupWidth * 0.35, 30);
 
-            // Draw Subtle Gridlines
+            // Subtle Gridlines
             ctx.strokeStyle = '#f1f5f9';
             ctx.lineWidth = 1;
             for (let i = 0; i <= 4; i++) {
@@ -1270,7 +1557,6 @@
                 ctx.stroke();
             }
 
-            // Draw Bars for each subject
             subjects.forEach((s, i) => {
                 const groupX = paddingLeft + (i * barGroupWidth) + (barGroupWidth / 2);
                 const compHeight = (s.completed / maxCount) * chartH;
@@ -1281,26 +1567,26 @@
                 const pendX = groupX + 2;
                 const baseY = paddingTop + chartH;
 
-                // Completed Bar (Emerald)
+                // Completed Bar
                 ctx.fillStyle = '#059669';
                 ctx.beginPath();
                 ctx.roundRect(compX, baseY - compHeight, barW, Math.max(compHeight, 2), [4, 4, 0, 0]);
                 ctx.fill();
 
-                // Pending Bar (Royal Cobalt)
+                // Pending Bar
                 ctx.fillStyle = '#1d4ed8';
                 ctx.beginPath();
                 ctx.roundRect(pendX, baseY - pendHeight, barW, Math.max(pendHeight, 2), [4, 4, 0, 0]);
                 ctx.fill();
 
-                // Numbers above bars
+                // Top Count Badges
                 ctx.fillStyle = '#64748b';
                 ctx.font = 'bold 11px JetBrains Mono, monospace';
                 ctx.textAlign = 'center';
                 if (s.completed > 0) ctx.fillText(s.completed, compX + barW / 2, baseY - compHeight - 6);
                 if (pendCount > 0) ctx.fillText(pendCount, pendX + barW / 2, baseY - pendHeight - 6);
 
-                // Label (Subject Name)
+                // Label
                 ctx.fillStyle = '#334155';
                 ctx.font = '600 12px Inter, sans-serif';
                 const label = s.name.length > 10 ? s.name.substring(0, 9) + '..' : s.name;
@@ -1310,11 +1596,10 @@
 
         async function loadStudyPlan() {
             const hours = document.getElementById('plan-hours-input').value;
-            const res = await fetch(`${API_BASE}/plan?hours=${hours}`);
-            const sessions = await res.json();
+            const sessions = await apiFetch(`/plan?hours=${hours}`);
 
             const tbody = document.getElementById('timetable-body');
-            if (sessions.length === 0) {
+            if (!sessions || sessions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:3rem;">All topics completed or no pending topics!</td></tr>';
                 return;
             }
@@ -1336,9 +1621,7 @@
         }
 
         async function loadSubjectsAndTopics() {
-            // 1. Subjects
-            const sRes = await fetch(`${API_BASE}/subjects`);
-            const subjects = await sRes.json();
+            const subjects = await apiFetch('/subjects');
 
             document.getElementById('subject-count-pill').innerText = `${subjects.length} Subjects`;
 
@@ -1371,12 +1654,10 @@
                 `).join('');
             }
 
-            // 2. Topics
-            const tRes = await fetch(`${API_BASE}/topics`);
-            const topics = await tRes.json();
+            const topics = await apiFetch('/topics');
 
             const tbody = document.getElementById('topics-body');
-            if (topics.length === 0) {
+            if (!topics || topics.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:3rem;">No topics added yet.</td></tr>';
                 return;
             }
@@ -1413,7 +1694,7 @@
             const name = document.getElementById('sub-name').value;
             const examDate = document.getElementById('sub-date').value;
 
-            await fetch(`${API_BASE}/subjects`, {
+            await apiFetch('/subjects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, examDate })
@@ -1428,7 +1709,7 @@
 
         async function deleteSubject(id, name) {
             if (!confirm(`Delete subject '${name}' and its topics?`)) return;
-            await fetch(`${API_BASE}/subjects?id=${id}`, { method: 'DELETE' });
+            await apiFetch(`/subjects?id=${id}`, { method: 'DELETE' });
             showToast('Subject deleted');
             loadSubjectsAndTopics();
             loadDashboard();
@@ -1443,7 +1724,7 @@
                 hours: document.getElementById('topic-hours').value
             };
 
-            await fetch(`${API_BASE}/topics`, {
+            await apiFetch('/topics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -1456,14 +1737,14 @@
         }
 
         async function deleteTopic(id) {
-            await fetch(`${API_BASE}/topics?id=${id}`, { method: 'DELETE' });
+            await apiFetch(`/topics?id=${id}`, { method: 'DELETE' });
             showToast('Topic removed');
             loadSubjectsAndTopics();
             loadDashboard();
         }
 
         async function completeTopic(id) {
-            await fetch(`${API_BASE}/topics/complete?id=${id}`, { method: 'POST' });
+            await apiFetch(`/topics/complete?id=${id}`, { method: 'POST' });
             showToast('Topic completed');
             loadSubjectsAndTopics();
             loadStudyPlan();
@@ -1471,10 +1752,8 @@
         }
 
         async function loadRecommendations() {
-            const res = await fetch(`${API_BASE}/recommendations`);
-            const data = await res.json();
+            const data = await apiFetch('/recommendations');
 
-            // 1. Top recommendation
             const topCard = document.getElementById('rec-top-card');
             if (data.topRecommendation) {
                 topCard.innerHTML = `
@@ -1494,7 +1773,6 @@
                 topCard.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem;">All topics completed!</p>';
             }
 
-            // 2. Revision
             const revList = document.getElementById('rec-revision-list');
             if (data.revisionTopics && data.revisionTopics.length > 0) {
                 revList.innerHTML = data.revisionTopics.map(t => `
@@ -1510,7 +1788,6 @@
                 revList.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem;">No completed hard topics need revision right now.</p>';
             }
 
-            // 3. Low completion
             const lowList = document.getElementById('rec-low-list');
             if (data.lowCompletion && data.lowCompletion.length > 0) {
                 lowList.innerHTML = data.lowCompletion.map(s => `
