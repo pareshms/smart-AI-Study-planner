@@ -11,3 +11,4 @@ target/
 
 # Database runtime files
 database/*.db-journal
+
