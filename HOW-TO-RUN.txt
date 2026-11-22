@@ -1,0 +1,19 @@
+=======================================================
+SMART AI STUDY PLANNER - WEB APPLICATION
+=======================================================
+
+HOW TO RUN:
+1. Double-click "run.bat"
+2. Your default web browser will automatically open:
+   http://localhost:8080
+
+FEATURES IN THE WEB UI:
+- 📊 Dashboard: Progress bars, topic counts, exam countdowns
+- ⚡ Smart Timetable: Rule-based priority scheduler with 1-click completion
+- 📚 Subjects & Topics: Add subjects, topics, set difficulty 1-5
+- 💡 AI Recommendations: High priority next topics & revision suggestions
+- 👤 Profile: Student info & daily study hours
+
+TO RUN TERMINAL CONSOLE VERSION (OPTIONAL):
+- Run in terminal: .\run.bat --console
+=======================================================

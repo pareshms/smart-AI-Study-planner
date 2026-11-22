@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Study Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* High-Contrast, Balanced Light Palette */
+            --bg-canvas: #f1f5f9;            /* Cool Slate Canvas */
+            --bg-surface: #ffffff;           /* Pure White Cards */
+            --bg-subtle: #f8fafc;            /* Subtle Inner Container */
+            
+            --border-card: #e2e8f0;          /* Crisp Structural Border */
+            --border-subtle: #edf2f7;
+            
+            --primary: #1d4ed8;              /* Royal Cobalt */
+            --primary-hover: #1e40af;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+            
+            --ai-indigo: #4338ca;            /* Deep Indigo */
+            --ai-indigo-light: #eef2ff;
+            --ai-indigo-border: #c7d2fe;
+            
+            --text-title: #0f172a;           /* Obsidian Slate */
+            --text-body: #475569;            /* Steel Gray */
+            --text-muted: #64748b;           /* Muted Slate */
+            --text-faint: #94a3b8;           /* Faint Labels */
+            
+            --success: #059669;
+            --success-bg: #ecfdf5;
+            --success-border: #a7f3d0;
+            
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --warning-border: #fde68a;
+            
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --danger-border: #fecaca;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            
+            --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+            --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+            
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-body);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 275px;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-card);
+            display: flex;
+            flex-direction: column;
+            padding: 2.2rem 1.4rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .brand-badge {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--ai-indigo));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .brand-text h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-title);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text span {
+            font-size: 0.72rem;
+            color: var(--ai-indigo);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.85rem 1.1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--text-title);
+            background: var(--bg-subtle);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background: var(--primary-light);
+            font-weight: 600;
+            border-color: var(--primary-border);
+        }
+
+        .nav-icon {
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-card);
+            padding: 1.1rem 1.2rem;
+            border-radius: var(--radius-md);
+        }
+
+        .footer-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-title);
+            margin-bottom: 3px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+
+        .footer-desc {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* Main Workspace Container with Generous Breathing Room */
+        .main-wrapper {
+            margin-left: 275px;
+            flex: 1;
+            padding: 2.8rem 3.5rem;
+            max-width: 1100px;
+        }
+
+        /* Top Header */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2.4rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .header-left h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.03em;
+        }
+
+        .header-left p {
+            color: var(--text-muted);
+            font-size: 0.94rem;
+            margin-top: 5px;
+        }
+
+        .student-chip {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-card);
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            box-shadow: var(--shadow-card);
+            transition: all 0.2s;
+        }
+
+        .student-chip:hover {
+            border-color: var(--primary-border);
+            box-shadow: var(--shadow-float);
+        }
+
+        .avatar-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--ai-indigo);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .chip-name {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-title);
+            line-height: 1.2;
+        }
+
+        .chip-meta {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+
+        /* Panels */
+        .panel {
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Clean White Cards with High Contrast on Canvas */
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem 2.2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.6rem;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-title);
+            letter-spacing: -0.01em;
+        }
+
+        .card-desc {
+            font-size: 0.86rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* AI Feature Highlight Card */
+        .ai-banner {
+            background: var(--bg-surface);
+            border: 1px solid var(--ai-indigo-border);
+            border-left: 5px solid var(--ai-indigo);
+            border-radius: var(--radius-lg);
+            padding: 1.8rem 2.2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            display: none;
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--ai-indigo-light);
+            color: var(--ai-indigo);
+            border: 1px solid var(--ai-indigo-border);
+            padding: 0.3rem 0.85rem;
+            border-radius: 50px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.8rem;
+        }
+
+        .ai-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.4rem;
+        }
+
+        .ai-sub {
+            font-size: 0.94rem;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+        /* 3-Stat Metric Row */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            padding: 1.6rem 1.8rem;
+            box-shadow: var(--shadow-card);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-float);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-faint);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--text-title);
+            line-height: 1.1;
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: var(--bg-canvas);
+            border-radius: 50px;
+            overflow: hidden;
+            margin: 12px 0 6px 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--ai-indigo));
+            border-radius: 50px;
+            transition: width 0.5s ease;
+        }
+
+        /* Analytics Graphs Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 1.8rem;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-height: 200px;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 1.2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.3rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-title);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.02em;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border-card);
+            background: var(--bg-surface);
+            color: var(--text-title);
+            font-size: 0.94rem;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.75rem 1.4rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-ai {
+            background: var(--ai-indigo);
+            color: white;
+            box-shadow: 0 2px 4px rgba(67, 56, 202, 0.25);
+        }
+
+        .btn-ai:hover {
+            background: #3730a3;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success);
+        }
+
+        .btn-success:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-bg);
+            border-color: var(--danger-border);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.45rem 0.9rem;
+            font-size: 0.8rem;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Tables */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+            text-align: left;
+        }
+
+        .custom-table th {
+            padding: 0.9rem 1.2rem;
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-card);
+        }
+
+        .custom-table td {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid var(--border-card);
+            color: var(--text-title);
+            vertical-align: middle;
+        }
+
+        .custom-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .custom-table tr:hover {
+            background: var(--bg-subtle);
+        }
+
+        /* Badges & Pills */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 0.26rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .badge-1 { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-2 { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+        .badge-3 { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
+        .badge-4 { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .badge-5 { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        .badge-exam {
+            background: var(--bg-canvas);
+            color: var(--text-body);
+            border: 1px solid var(--border-card);
+            font-family: var(--font-mono);
+            font-size: 0.76rem;
+        }
+
+        .badge-exam.urgent {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border-color: var(--danger-border);
+        }
+
+        /* Subjects Grid */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .subject-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--shadow-card);
+            transition: all 0.2s;
+        }
+
+        .subject-card:hover {
+            box-shadow: var(--shadow-float);
+        }
+
+        .subject-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+        }
+
+        .subject-title {
+            font-size: 1.08rem;
+            font-weight: 700;
+            color: var(--text-title);
+        }
+
+        .subject-date {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* Toast Container */
+        .toast-container {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .toast {
+            background: var(--text-title);
+            color: white;
+            padding: 0.85rem 1.3rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-float);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-badge">⚡</div>
+            <div class="brand-text">
+                <h2>StudyPlanner</h2>
+                <span>Smart AI • Offline</span>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchTab('dashboard')">
+                <span class="nav-icon">📊</span> Dashboard
+            </li>
+            <li class="nav-item" onclick="switchTab('plan')">
+                <span class="nav-icon">⚡</span> Auto-Plan
+            </li>
+            <li class="nav-item" onclick="switchTab('subjects')">
+                <span class="nav-icon">📚</span> Subjects & Topics
+            </li>
+            <li class="nav-item" onclick="switchTab('recommendations')">
+                <span class="nav-icon">💡</span> AI Recommendations
+            </li>
+            <li class="nav-item" onclick="switchTab('profile')">
+                <span class="nav-icon">👤</span> Settings
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="footer-status">
+                <div class="status-dot"></div>
+                <span>Engine Active</span>
+            </div>
+            <div class="footer-desc">
+                Java OOP Architecture<br>
+                Offline Priority Engine
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-wrapper">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <h1 id="page-title">Executive Dashboard</h1>
+                <p id="page-desc">Overview of your preparation progress, visual analytics, and study targets.</p>
+            </div>
+            <div class="student-chip" onclick="switchTab('profile')">
+                <div class="avatar-circle" id="avatar-circle">S</div>
+                <div>
+                    <div class="chip-name" id="student-name-text">Loading...</div>
+                    <div class="chip-meta" id="student-meta-text">Semester -- • 0 hrs/day</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. DASHBOARD PANEL -->
+        <section id="dashboard" class="panel active">
+            
+            <!-- AI Recommendation Highlight (Deep Indigo Accent) -->
+            <div class="ai-banner" id="hero-banner">
+                <span class="ai-badge">⚡ Top Recommended Target</span>
+                <h2 class="ai-title" id="hero-topic-name">Analyzing priority...</h2>
+                <p class="ai-sub" id="hero-topic-details">Subject • Est. 0 hrs • Exam in 0 days</p>
+            </div>
+
+            <!-- 3 Stat Metrics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Topics</div>
+                    <div class="stat-value" id="stat-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-value" style="color: var(--success);" id="stat-completed">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Study</div>
+                    <div class="stat-value" style="color: var(--warning);" id="stat-pending">0</div>
+                </div>
+            </div>
+
+            <!-- Visual Progress Analytics (Graphs Row) -->
+            <div class="charts-grid">
+                <!-- Left: Donut Completion Gauge -->
+                <div class="chart-card">
+                    <h2 class="card-title" style="font-size:1rem; margin-bottom:1rem;">Completion Gauge</h2>
+                    <div class="chart-box">
+                        <canvas id="gaugeCanvas" width="220" height="220"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <span><span class="legend-dot" style="background:var(--primary);"></span>Completed</span>
+                        <span><span class="legend-dot" style="background:#cbd5e1;"></span>Pending</span>
+                    </div>
+                </div>
+
+                <!-- Right: Subject Comparison Bar Graph -->
+                <div class="chart-card">
+                    <h2 class="card-title" style="font-size:1rem; margin-bottom:1rem;">Subject Topic Distribution</h2>
+                    <div class="chart-box">
+                        <canvas id="barCanvas" width="500" height="220"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <span><span class="legend-dot" style="background:var(--success);"></span>Completed</span>
+                        <span><span class="legend-dot" style="background:var(--primary);"></span>Pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Progress Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Overall Preparation Progress</h2>
+                        <p class="card-desc">Syllabus completion percentage across all registered subjects.</p>
+                    </div>
+                    <span id="overall-percent" style="font-size: 1.6rem; font-weight: 800; color: var(--primary); font-family: var(--font-mono);">0.0%</span>
+                </div>
+                <div class="progress-track" style="height: 12px;">
+                    <div class="progress-bar-fill" id="dashboard-progress-bar" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Subject-wise Progress -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Subject Breakdown</h2>
+                </div>
+                <div id="subject-progress-list">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No subjects registered yet.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. AUTO-PLAN TIMETABLE PANEL -->
+        <section id="plan" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">⚡ Smart Daily Timetable</h2>
+                        <p class="card-desc">
+                            The intelligent scheduler ranks pending topics by: <b>Difficulty (35%)</b> + <b>Exam Urgency (40%)</b> + <b>Duration (25%)</b>
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div>
+                            <span style="font-size: 0.74rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Study Hours</span>
+                            <input type="number" id="plan-hours-input" class="form-input" style="width: 95px; padding: 0.55rem 0.8rem;" step="0.5" min="0.5" max="24" value="4.0">
+                        </div>
+                        <button class="btn btn-ai" onclick="loadStudyPlan()" style="margin-top: 16px;">
+                            ⚡ Auto-Plan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Topic Target</th>
+                                <th>Subject</th>
+                                <th>Difficulty</th>
+                                <th>Allocated Duration</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timetable-body">
+                            <tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 3rem;">Click 'Auto-Plan' to generate today's schedule.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. SUBJECTS & TOPICS PANEL -->
+        <section id="subjects" class="panel">
+            <div class="grid-2">
+                <!-- Add Subject -->
+                <div class="card">
+                    <h2 class="card-title" style="margin-bottom: 1.2rem;">Add New Subject</h2>
+                    <form onsubmit="addSubject(event)">
+                        <div class="form-group">
+                            <label class="form-label">Subject Name</label>
+                            <input type="text" id="sub-name" class="form-input" placeholder="e.g. Data Structures & Algorithms" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Exam Date</label>
+                            <input type="date" id="sub-date" class="form-input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">+ Add Subject</button>
+                    </form>
+                </div>
+
+                <!-- Add Topic -->
+                <div class="card">
+                    <h2 class="card-title" style="margin-bottom: 1.2rem;">Add Syllabus Topic</h2>
+                    <form onsubmit="addTopic(event)">
+                        <div class="form-group">
+                            <label class="form-label">Select Subject</label>
+                            <select id="topic-sub-select" class="form-select" required>
+                                <option value="">-- Choose Subject --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Topic Name</label>
+                            <input type="text" id="topic-name" class="form-input" placeholder="e.g. Binary Search Trees" required>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Difficulty</label>
+                                <select id="topic-diff" class="form-select">
+                                    <option value="1">1 - Very Easy</option>
+                                    <option value="2">2 - Easy</option>
+                                    <option value="3" selected>3 - Medium</option>
+                                    <option value="4">4 - Hard</option>
+                                    <option value="5">5 - Very Hard</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Est. Hours</label>
+                                <input type="number" id="topic-hours" class="form-input" step="0.5" min="0.5" max="50" value="2.0" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">+ Add Topic</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Subject Cards Grid -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Enrolled Subjects</h2>
+                    <span id="subject-count-pill" class="badge badge-exam">0 Subjects</span>
+                </div>
+                <div id="subjects-container" class="subjects-grid">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No subjects registered yet.</p>
+                </div>
+            </div>
+
+            <!-- Topics Inventory Table -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border-card);">
+                    <h2 class="card-title">Curriculum Topics Inventory</h2>
+                    <p class="card-desc">All syllabus topics tracked across your enrolled subjects.</p>
+                </div>
+                <div class="table-wrap" style="border: none; border-radius: 0;">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Topic Name</th>
+                                <th>Subject</th>
+                                <th>Difficulty</th>
+                                <th>Duration</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topics-body">
+                            <tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2.8rem;">Loading topics...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. AI RECOMMENDATIONS PANEL -->
+        <section id="recommendations" class="panel">
+            <!-- Algorithm Formula Card -->
+            <div class="card" style="background: var(--ai-indigo-light); border-color: var(--ai-indigo-border);">
+                <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--ai-indigo); margin-bottom: 4px;">Rule-Based Algorithm</div>
+                <div style="font-family: var(--font-mono); font-size: 0.92rem; color: var(--text-title); line-height: 1.6;">
+                    <b>Priority Score</b> = (Difficulty / 5.0 × 35) + [1.0 / max(DaysToExam, 1) × 40] + [min(Hours, 10) / 10 × 25]
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+                    Deterministic multi-factor calculation prioritizing impending exam deadlines and difficult concepts.
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 1rem;">⚡ Top Priority Target</h2>
+                <div id="rec-top-card" style="padding: 1.2rem; background: var(--bg-canvas); border-radius: var(--radius-sm); border: 1px solid var(--border-card);">
+                    Analyzing syllabus...
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 1rem;">🔄 Spaced Repetition (Revision of Completed Hard Topics)</h2>
+                <div id="rec-revision-list">
+                    <p style="color: var(--text-muted); font-size: 0.88rem;">No completed topics need revision at this time.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 1rem;">⚠️ Subjects Needing Attention (&lt; 50% Completion)</h2>
+                <div id="rec-low-list">
+                    <p style="color: var(--text-muted); font-size: 0.88rem;">All subjects are progressing above 50%!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. STUDENT SETTINGS PANEL -->
+        <section id="profile" class="panel">
+            <div class="card" style="max-width: 580px;">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Student Profile Settings</h2>
+                        <p class="card-desc">Configure your semester and daily study capacity.</p>
+                    </div>
+                </div>
+                <form onsubmit="saveProfile(event)">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="prof-name" class="form-input" placeholder="e.g. Rahul Sharma" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Academic Semester (1 to 8)</label>
+                        <input type="number" id="prof-sem" class="form-input" min="1" max="8" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Daily Available Study Hours</label>
+                        <input type="number" id="prof-hours" class="form-input" step="0.5" min="0.5" max="24" value="4.0" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Save Changes</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, 2600);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+
+            const navIndex = { 'dashboard': 0, 'plan': 1, 'subjects': 2, 'recommendations': 3, 'profile': 4 }[tabId];
+            if (navIndex !== undefined) {
+                document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+            }
+
+            const headerData = {
+                'dashboard': ['Executive Dashboard', 'Overview of your preparation progress, visual analytics, and study targets.'],
+                'plan': ['Auto-Plan Timetable', 'Intelligent schedule generated using the multi-factor priority algorithm.'],
+                'subjects': ['Subjects & Topics Curriculum', 'Manage curriculum modules, exam countdowns, and completion status.'],
+                'recommendations': ['AI Recommendations & Analytics', 'Algorithmic insights, difficulty weighting, and spaced repetition alerts.'],
+                'profile': ['Student Profile Settings', 'Configure your academic profile, semester, and daily study limits.']
+            };
+
+            document.getElementById('page-title').innerText = headerData[tabId][0];
+            document.getElementById('page-desc').innerText = headerData[tabId][1];
+
+            if (tabId === 'dashboard') loadDashboard();
+            if (tabId === 'plan') loadStudyPlan();
+            if (tabId === 'subjects') loadSubjectsAndTopics();
+            if (tabId === 'recommendations') loadRecommendations();
+            if (tabId === 'profile') loadProfile();
+        }
+
+        async function init() {
+            await loadProfile();
+            await loadDashboard();
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_BASE}/student`);
+                const data = await res.json();
+                if (data.registered) {
+                    document.getElementById('student-name-text').innerText = data.name;
+                    document.getElementById('student-meta-text').innerText = `Semester ${data.semester} • ${data.dailyStudyHours}h/day`;
+                    document.getElementById('avatar-circle').innerText = data.name.charAt(0).toUpperCase();
+
+                    document.getElementById('prof-name').value = data.name;
+                    document.getElementById('prof-sem').value = data.semester;
+                    document.getElementById('prof-hours').value = data.dailyStudyHours;
+                    document.getElementById('plan-hours-input').value = data.dailyStudyHours;
+                } else {
+                    document.getElementById('student-name-text').innerText = 'Unregistered';
+                    switchTab('profile');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('prof-name').value,
+                semester: document.getElementById('prof-sem').value,
+                dailyStudyHours: document.getElementById('prof-hours').value
+            };
+
+            await fetch(`${API_BASE}/student`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            showToast('Student profile updated');
+            await loadProfile();
+            switchTab('dashboard');
+        }
+
+        async function loadDashboard() {
+            try {
+                const pRes = await fetch(`${API_BASE}/progress`);
+                const pData = await pRes.json();
+
+                document.getElementById('stat-total').innerText = pData.total;
+                document.getElementById('stat-completed').innerText = pData.completed;
+                document.getElementById('stat-pending').innerText = pData.pending;
+
+                const pct = pData.percentage.toFixed(1);
+                document.getElementById('overall-percent').innerText = `${pct}%`;
+                document.getElementById('dashboard-progress-bar').style.width = `${pct}%`;
+
+                // Render Graphs (Canvas 1: Gauge Donut, Canvas 2: Subject Bar Graph)
+                renderGaugeChart(pData.completed, pData.pending, pData.percentage);
+                renderBarChart(pData.subjects || []);
+
+                // Subject breakdown
+                const subList = document.getElementById('subject-progress-list');
+                if (pData.subjects && pData.subjects.length > 0) {
+                    subList.innerHTML = pData.subjects.map(s => `
+                        <div style="margin-bottom: 1.2rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; font-weight:700; margin-bottom:5px;">
+                                <span>${s.name} <span style="color:var(--text-muted); font-weight:500;">(${s.completed}/${s.total})</span></span>
+                                <span style="font-family:var(--font-mono); color:${s.percentage >= 50 ? 'var(--success)' : 'var(--warning)'};">${s.percentage.toFixed(1)}%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-bar-fill" style="width: ${s.percentage}%;"></div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    subList.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No subjects registered yet.</p>';
+                }
+
+                // AI Recommendations Banner
+                const rRes = await fetch(`${API_BASE}/recommendations`);
+                const rData = await rRes.json();
+                const hero = document.getElementById('hero-banner');
+                if (rData.topRecommendation) {
+                    hero.style.display = 'block';
+                    document.getElementById('hero-topic-name').innerText = rData.topRecommendation.topicName;
+                    document.getElementById('hero-topic-details').innerHTML = `
+                        Subject: <b>${rData.topRecommendation.subjectName}</b> • Exam in <b>${rData.topRecommendation.daysUntilExam} days</b> • Est. <b>${rData.topRecommendation.estimatedHours} hrs</b> • Difficulty: <b>${rData.topRecommendation.difficultyText}</b>
+                    `;
+                } else {
+                    hero.style.display = 'none';
+                }
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ==========================================
+        // Visual Graphs Rendering (Offline HTML5 Canvas)
+        // ==========================================
+
+        function renderGaugeChart(completed, pending, percentage) {
+            const canvas = document.getElementById('gaugeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const r = 75;
+            const lw = 18;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Background Track
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.lineWidth = lw;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.stroke();
+
+            // Completed Arc
+            if (completed + pending > 0) {
+                const total = completed + pending;
+                const endAngle = (completed / total) * 2 * Math.PI - (Math.PI / 2);
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, -Math.PI / 2, endAngle, false);
+                ctx.lineWidth = lw;
+                ctx.strokeStyle = '#1d4ed8';
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            // Center Percentage Text
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 28px Inter, sans-serif';
+            ctx.fillText(`${percentage.toFixed(0)}%`, cx, cy - 6);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 12px Inter, sans-serif';
+            ctx.fillText('COMPLETED', cx, cy + 18);
+        }
+
+        function renderBarChart(subjects) {
+            const canvas = document.getElementById('barCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            if (!subjects || subjects.length === 0) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Add subjects to view topic distribution graph', w / 2, h / 2);
+                return;
+            }
+
+            const paddingLeft = 30;
+            const paddingRight = 20;
+            const paddingTop = 25;
+            const paddingBottom = 40;
+            const chartW = w - paddingLeft - paddingRight;
+            const chartH = h - paddingTop - paddingBottom;
+
+            // Find maximum count for scale
+            let maxCount = 1;
+            subjects.forEach(s => { if (s.total > maxCount) maxCount = s.total; });
+            maxCount = Math.max(maxCount, 5); // Minimum grid ceiling
+
+            const barGroupWidth = chartW / subjects.length;
+            const barW = Math.min(barGroupWidth * 0.35, 30);
+
+            // Draw Subtle Gridlines
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = paddingTop + (chartH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, y);
+                ctx.lineTo(w - paddingRight, y);
+                ctx.stroke();
+            }
+
+            // Draw Bars for each subject
+            subjects.forEach((s, i) => {
+                const groupX = paddingLeft + (i * barGroupWidth) + (barGroupWidth / 2);
+                const compHeight = (s.completed / maxCount) * chartH;
+                const pendCount = s.total - s.completed;
+                const pendHeight = (pendCount / maxCount) * chartH;
+
+                const compX = groupX - barW - 2;
+                const pendX = groupX + 2;
+                const baseY = paddingTop + chartH;
+
+                // Completed Bar (Emerald)
+                ctx.fillStyle = '#059669';
+                ctx.beginPath();
+                ctx.roundRect(compX, baseY - compHeight, barW, Math.max(compHeight, 2), [4, 4, 0, 0]);
+                ctx.fill();
+
+                // Pending Bar (Royal Cobalt)
+                ctx.fillStyle = '#1d4ed8';
+                ctx.beginPath();
+                ctx.roundRect(pendX, baseY - pendHeight, barW, Math.max(pendHeight, 2), [4, 4, 0, 0]);
+                ctx.fill();
+
+                // Numbers above bars
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 11px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                if (s.completed > 0) ctx.fillText(s.completed, compX + barW / 2, baseY - compHeight - 6);
+                if (pendCount > 0) ctx.fillText(pendCount, pendX + barW / 2, baseY - pendHeight - 6);
+
+                // Label (Subject Name)
+                ctx.fillStyle = '#334155';
+                ctx.font = '600 12px Inter, sans-serif';
+                const label = s.name.length > 10 ? s.name.substring(0, 9) + '..' : s.name;
+                ctx.fillText(label, groupX, baseY + 20);
+            });
+        }
+
+        async function loadStudyPlan() {
+            const hours = document.getElementById('plan-hours-input').value;
+            const res = await fetch(`${API_BASE}/plan?hours=${hours}`);
+            const sessions = await res.json();
+
+            const tbody = document.getElementById('timetable-body');
+            if (sessions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:3rem;">All topics completed or no pending topics!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sessions.map((s, idx) => `
+                <tr>
+                    <td style="font-weight:700; color:var(--primary); font-family:var(--font-mono);">${idx + 1}</td>
+                    <td><strong style="color:var(--text-title);">${s.topicName}</strong></td>
+                    <td style="color:var(--text-muted); font-weight:600;">${s.subjectName}</td>
+                    <td><span class="badge badge-${s.difficulty}">${s.difficultyText}</span></td>
+                    <td style="font-weight:700; font-family:var(--font-mono);">${s.allocatedHours.toFixed(1)} hrs</td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-sm btn-success" onclick="completeTopic(${s.topicId})">
+                            ✓ Complete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSubjectsAndTopics() {
+            // 1. Subjects
+            const sRes = await fetch(`${API_BASE}/subjects`);
+            const subjects = await sRes.json();
+
+            document.getElementById('subject-count-pill').innerText = `${subjects.length} Subjects`;
+
+            const sel = document.getElementById('topic-sub-select');
+            sel.innerHTML = '<option value="">-- Choose Subject --</option>' + 
+                subjects.map(s => `<option value="${s.id}">${s.name} (${s.examDate})</option>`).join('');
+
+            const subContainer = document.getElementById('subjects-container');
+            if (subjects.length === 0) {
+                subContainer.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No subjects registered yet.</p>';
+            } else {
+                subContainer.innerHTML = subjects.map(s => `
+                    <div class="subject-card">
+                        <div>
+                            <div class="subject-top">
+                                <div class="subject-title">${s.name}</div>
+                                <span class="badge badge-exam ${s.daysUntil <= 7 ? 'urgent' : ''}">
+                                    ${s.daysUntil} days left
+                                </span>
+                            </div>
+                            <div class="subject-date">Exam Date: <b>${s.examDate}</b></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.2rem; border-top:1px solid var(--border-card); padding-top:0.8rem;">
+                            <span style="font-size:0.78rem; color:var(--text-muted);">Subject ID: #${s.id}</span>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSubject(${s.id}, '${escapeHtml(s.name)}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 2. Topics
+            const tRes = await fetch(`${API_BASE}/topics`);
+            const topics = await tRes.json();
+
+            const tbody = document.getElementById('topics-body');
+            if (topics.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:3rem;">No topics added yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = topics.map(t => `
+                <tr>
+                    <td>
+                        <span class="badge ${t.isCompleted ? 'badge-1' : 'badge-exam'}">
+                            ${t.isCompleted ? '✓ Completed' : 'Pending'}
+                        </span>
+                    </td>
+                    <td><strong style="color:var(--text-title);">${t.name}</strong></td>
+                    <td style="color:var(--text-muted); font-weight:600;">${t.subjectName}</td>
+                    <td><span class="badge badge-${t.difficulty}">${t.difficultyText}</span></td>
+                    <td style="font-family:var(--font-mono); color:var(--text-muted);">${t.hours.toFixed(1)} hrs</td>
+                    <td style="text-align: right;">
+                        <div style="display:inline-flex; gap:6px;">
+                            ${!t.isCompleted ? `
+                                <button class="btn btn-sm btn-success" onclick="completeTopic(${t.id})">
+                                    Done
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deleteTopic(${t.id})">
+                                ✕
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addSubject(e) {
+            e.preventDefault();
+            const name = document.getElementById('sub-name').value;
+            const examDate = document.getElementById('sub-date').value;
+
+            await fetch(`${API_BASE}/subjects`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, examDate })
+            });
+
+            document.getElementById('sub-name').value = '';
+            document.getElementById('sub-date').value = '';
+            showToast('Subject added');
+            loadSubjectsAndTopics();
+            loadDashboard();
+        }
+
+        async function deleteSubject(id, name) {
+            if (!confirm(`Delete subject '${name}' and its topics?`)) return;
+            await fetch(`${API_BASE}/subjects?id=${id}`, { method: 'DELETE' });
+            showToast('Subject deleted');
+            loadSubjectsAndTopics();
+            loadDashboard();
+        }
+
+        async function addTopic(e) {
+            e.preventDefault();
+            const payload = {
+                subjectId: document.getElementById('topic-sub-select').value,
+                name: document.getElementById('topic-name').value,
+                difficulty: document.getElementById('topic-diff').value,
+                hours: document.getElementById('topic-hours').value
+            };
+
+            await fetch(`${API_BASE}/topics`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById('topic-name').value = '';
+            showToast('Topic added to syllabus');
+            loadSubjectsAndTopics();
+            loadDashboard();
+        }
+
+        async function deleteTopic(id) {
+            await fetch(`${API_BASE}/topics?id=${id}`, { method: 'DELETE' });
+            showToast('Topic removed');
+            loadSubjectsAndTopics();
+            loadDashboard();
+        }
+
+        async function completeTopic(id) {
+            await fetch(`${API_BASE}/topics/complete?id=${id}`, { method: 'POST' });
+            showToast('Topic completed');
+            loadSubjectsAndTopics();
+            loadStudyPlan();
+            loadDashboard();
+        }
+
+        async function loadRecommendations() {
+            const res = await fetch(`${API_BASE}/recommendations`);
+            const data = await res.json();
+
+            // 1. Top recommendation
+            const topCard = document.getElementById('rec-top-card');
+            if (data.topRecommendation) {
+                topCard.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 style="font-size:1.1rem; color:var(--text-title); margin-bottom:0.25rem;">${data.topRecommendation.topicName}</h3>
+                            <p style="font-size:0.86rem; color:var(--text-muted);">
+                                Subject: <b style="color:var(--text-title);">${data.topRecommendation.subjectName}</b> • Exam in <b style="color:var(--danger);">${data.topRecommendation.daysUntilExam} days</b> • Est. <b>${data.topRecommendation.estimatedHours} hrs</b>
+                            </p>
+                        </div>
+                        <span class="badge badge-4">
+                            Difficulty: ${data.topRecommendation.difficultyText}
+                        </span>
+                    </div>
+                `;
+            } else {
+                topCard.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem;">All topics completed!</p>';
+            }
+
+            // 2. Revision
+            const revList = document.getElementById('rec-revision-list');
+            if (data.revisionTopics && data.revisionTopics.length > 0) {
+                revList.innerHTML = data.revisionTopics.map(t => `
+                    <div style="padding:0.85rem 1.1rem; background:var(--bg-canvas); border:1px solid var(--border-card); border-radius:var(--radius-sm); margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong style="color:var(--text-title); font-size:0.92rem;">${t.topicName}</strong>
+                            <span style="color:var(--text-muted); font-size:0.82rem; margin-left:6px;">(${t.subjectName})</span>
+                        </div>
+                        <span class="badge badge-5">${t.difficultyText}</span>
+                    </div>
+                `).join('');
+            } else {
+                revList.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem;">No completed hard topics need revision right now.</p>';
+            }
+
+            // 3. Low completion
+            const lowList = document.getElementById('rec-low-list');
+            if (data.lowCompletion && data.lowCompletion.length > 0) {
+                lowList.innerHTML = data.lowCompletion.map(s => `
+                    <div style="padding:0.85rem 1.1rem; background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:var(--radius-sm); margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="color:var(--danger);">${s.subjectName}</strong>
+                        <span style="font-family:var(--font-mono); font-weight:700; color:var(--danger); font-size:0.84rem;">${s.percentage.toFixed(1)}% completed</span>
+                    </div>
+                `).join('');
+            } else {
+                lowList.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem;">All subjects are progressing above 50%!</p>';
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/'/g, "\\'");
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

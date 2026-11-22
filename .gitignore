@@ -1,0 +1,13 @@
+# IDE specific files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Build artifacts (optional, out can be compiled)
+target/
+
+# Database runtime files
+database/*.db-journal
